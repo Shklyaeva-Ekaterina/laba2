@@ -24,8 +24,9 @@ map<string, CompressStation> stations;
 void Menu();
 void Mistake();
 void CreatePipe();
-void CreateCompress(CompressStation& C);
-void View(Pipe& P, CompressStation& C);
+void CreateCompress();
+void ViewPipe();
+void ViewComp();
 void EditPipe(Pipe& P);
 void EditCompress(CompressStation& C);
 void SaveFile(Pipe& P, CompressStation& C);
@@ -33,8 +34,6 @@ void ReadFile(Pipe& P, CompressStation& C);
 
 int main()
 {
-    Pipe P;
-    CompressStation C;
     bool cycle = 1;
     while (cycle) {
         int choice;
@@ -42,15 +41,12 @@ int main()
         while (1) {
             cin >> choice; // Считываем число
             // Проверяем, правильно ли введено число
-            if (choice >= 0 && choice < 8 && cin.good() && cin.peek() == '\n') {
+            if (choice >= 0 && choice <= 6 && cin.good() && cin.peek() == '\n') {
                 // Если всё в порядке, выходим из цикла
                 break;
             }
             else {
                 Mistake();//выводим сообщение об ошибке
-                // Сбрасываем состояние потока и очищаем входной буфер
-                cin.clear(); // Сбрасываем флаг ошибки
-                cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Игнорируем неправильный ввод
             }
         }
         switch (choice) {
@@ -58,29 +54,27 @@ int main()
             CreatePipe();
             break;
         case 2:
-            CreateCompress(C);
+            CreateCompress();
             break;
         case 3:
-            View(P, C);
-            for (const auto& pair : stations) {
-                std::cout << pair.first << ": " << pair.second.workshop << std::endl;
-            }
+            ViewPipe();
+                        //for (const auto& pair : stations) {
+            //    std::cout << pair.first << ": " << pair.second.workshop << std::endl;
+            //}
             break;
         case 4:
-            EditPipe(P);
-            break;
-        case 5:
-            EditCompress(C);
-            break;
-        case 6:
-            SaveFile(P, C);
-            break;
-        case 7:
-            ReadFile(P, C);
-            break;
-        case 0:
-            cycle = 0;
-            break;
+            ViewComp();
+        //    EditPipe(P);
+        //    break;
+        //case 5:
+        //    EditCompress(C);
+        //    break;
+        //case 6:
+        //    SaveFile(P, C);
+        //    break;
+        //case 0:
+        //    cycle = 0;
+        //    break;
         }
     }
 };
@@ -89,11 +83,12 @@ void Menu() { // создаем меню для выбора действий
     cout << "\n...........Choose.an.option...........\n";
     cout << ".  1.Create a pipe                   .\n";
     cout << ".  2.Create a compressor station     .\n";
-    cout << ".  3.View the objects                .\n";
-    cout << ".  4.Edit the pipe                   .\n";
-    cout << ".  5.Edit the compressor station     .\n";
-    cout << ".  6.Save the information to a file  .\n";
-    cout << ".  7.Read the information from a file.\n";
+    cout << ".  3.View my pipes                   .\n";
+    cout << ".  4.View my compressor stations     .\n";
+    cout << ".  5.Search pipes                    .\n";
+    cout << ".  6.Search compressor stations      .\n";
+    //cout << ".  7.Save the information to a file  .\n";
+    //cout << ".  8.Read the information from a file.\n";
     cout << ".  0.Exit                            .\n";
     cout << "......................................\n";
 };
@@ -168,7 +163,8 @@ void CreatePipe() {
     pipes[P.name] = P;
 }
 
-void CreateCompress(CompressStation& C) {
+void CreateCompress() {
+    CompressStation C;
     cout << "\nCreation of a compressor station.\n";
     cout << "Name the compressor station:\n";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
@@ -223,28 +219,38 @@ void CreateCompress(CompressStation& C) {
     stations[C.name] = C;
 }
 
-void View(Pipe& P, CompressStation& C) {
-    if (P.length > 0) {
-        cout << "\nPipe\n";
-        cout << "Name: " << P.name;
-        cout << "\nLength: " << P.length;
-        cout << "\nDiametr: " << P.diametr;
-        if (P.repair) {
-            cout << "\nUnder repair" << "\n";
-        }
-        else {
-            cout << "\nNot under repair" << "\n";
+void ViewPipe() {
+    if (pipes.size() != 0) {
+        cout << "\nPipes\n";
+        for (const auto& pair : pipes) {
+            cout << "\nName: " << pair.second.name;
+            cout << "\nLength: " << pair.second.length;
+            cout << "\nDiametr: " << pair.second.diametr;
+            if (pair.second.repair) {
+                cout << "\nUnder repair" << "\n";
+            }
+            else {
+                cout << "\nNot under repair" << "\n";
+            }
         }
     }
-    if (C.workshop > 0) {
-        cout << "\nCompressor Station\n";
-        cout << "Name: " << C.name;
-        cout << "\nAmount of workshops: " << C.workshop;
-        cout << "\nAmount of working workshops: " << C.realworkshop;
-        cout << "\nEffectiveness: " << C.effect << "\n";
+    else {
+        cout << "\nYou don't have any pipes yet\n";
     }
-    if (P.length < 0 && C.workshop < 0) {
-        cout << "\nYou don't have any objects\n";
+}
+
+void ViewComp() {
+    if (stations.size() != 0) {
+        cout << "\nCompressor Stations\n";
+        for (const auto& pair : stations) {
+            cout << "\nName: " << pair.second.name;
+            cout << "\nAmount of workshops: " << pair.second.workshop;
+            cout << "\nAmount of working workshops: " << pair.second.realworkshop;
+            cout << "\nEffectiveness: " << pair.second.effect << "\n";
+        }
+    }
+    else {
+        cout << "\nYou don't have any stations yet\n";
     }
 }
 
