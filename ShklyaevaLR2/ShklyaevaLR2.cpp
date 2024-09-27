@@ -19,14 +19,17 @@ struct CompressStation {
     double effect;
 };
 
-map<string, Pipe> pipes;
 map<string, CompressStation> stations;
-void Menu();
+int Menu();
 void Mistake();
-void CreatePipe();
+void CreatePipe(map<string, Pipe>& pipes);
 void CreateCompress();
-void ViewPipe();
+int ViewPipe(map<string, Pipe> pipes,string answer);
 void ViewComp();
+int MenuPipes();
+void Repair(bool filt, map<string, Pipe>& pipes);
+void Search(map<string, Pipe> pipes);
+int EditMenu();
 void EditPipe(Pipe& P);
 void EditCompress(CompressStation& C);
 void SaveFile(Pipe& P, CompressStation& C);
@@ -34,52 +37,55 @@ void ReadFile(Pipe& P, CompressStation& C);
 
 int main()
 {
+    map<string, Pipe> pipes;
     bool cycle = 1;
     while (cycle) {
         int choice;
-        Menu();//
-        while (1) {
-            cin >> choice; // Считываем число
-            // Проверяем, правильно ли введено число
-            if (choice >= 0 && choice <= 6 && cin.good() && cin.peek() == '\n') {
-                // Если всё в порядке, выходим из цикла
-                break;
-            }
-            else {
-                Mistake();//выводим сообщение об ошибке
-            }
-        }
+        choice = Menu();//
         switch (choice) {
         case 1:
-            CreatePipe();
+            CreatePipe(pipes);
             break;
         case 2:
             CreateCompress();
             break;
         case 3:
-            ViewPipe();
-                        //for (const auto& pair : stations) {
-            //    std::cout << pair.first << ": " << pair.second.workshop << std::endl;
-            //}
+            ViewPipe(pipes,"any");
             break;
         case 4:
             ViewComp();
-        //    EditPipe(P);
-        //    break;
-        //case 5:
-        //    EditCompress(C);
-        //    break;
+            break;
+        case 5:
+            bool filt;
+            choice = MenuPipes();
+            switch (choice) {
+            case 1:
+                filt = 1;
+                Repair(filt, pipes);
+                break;
+            case 2:
+                filt = 0;
+                Repair(filt, pipes);
+                break;
+            case 3:
+                Search(pipes);
+                break;
+            //case 0:
+            //    break;
+            }
+            break;
         //case 6:
         //    SaveFile(P, C);
         //    break;
-        //case 0:
-        //    cycle = 0;
-        //    break;
+        case 0:
+            cycle = 0;
+            break;
         }
     }
 };
 
-void Menu() { // создаем меню для выбора действий
+int Menu() { // создаем меню для выбора действий
+    int choice;
     cout << "\n...........Choose.an.option...........\n";
     cout << ".  1.Create a pipe                   .\n";
     cout << ".  2.Create a compressor station     .\n";
@@ -91,6 +97,18 @@ void Menu() { // создаем меню для выбора действий
     //cout << ".  8.Read the information from a file.\n";
     cout << ".  0.Exit                            .\n";
     cout << "......................................\n";
+    while (1) {
+        cin >> choice; // Считываем число
+        // Проверяем, правильно ли введено число
+        if (choice >= 0 && choice <= 6 && cin.good() && cin.peek() == '\n') {
+            // Если всё в порядке, выходим из цикла
+            break;
+        }
+        else {
+            Mistake();//выводим сообщение об ошибке
+        }
+    }
+    return choice;
 };
 
 void Mistake() {
@@ -99,7 +117,7 @@ void Mistake() {
     cin.ignore(numeric_limits<streamsize>::max(), '\n'); // Игнорируем неправильный ввод
 };
 
-void CreatePipe() {
+void CreatePipe(map<string, Pipe>& pipes) {
     Pipe P;
     cout << "\nCreation of a pipe.\n";
     cout << "Name the pipe:\n";
@@ -219,7 +237,7 @@ void CreateCompress() {
     stations[C.name] = C;
 }
 
-void ViewPipe() {
+int ViewPipe(map<string, Pipe> pipes, string answer) {
     if (pipes.size() != 0) {
         cout << "\nPipes\n";
         for (const auto& pair : pipes) {
@@ -233,9 +251,11 @@ void ViewPipe() {
                 cout << "\nNot under repair" << "\n";
             }
         }
+        return 1;
     }
     else {
-        cout << "\nYou don't have any pipes yet\n";
+        cout << "\nYou don't have" << answer << "pipes yet\n";
+        return 0;
     }
 }
 
@@ -254,30 +274,116 @@ void ViewComp() {
     }
 }
 
-void EditPipe(Pipe& P) {
-    if (P.length > 0) {
-        cout << "Is it under repair?(y/n)\n";
-        string answer;
-        while (1) {
-            cin >> answer; // Считываем ответ
-            // Проверяем, правильно ли введен ответ
-            if ((answer == "y" || answer == "n") && cin.good() && cin.peek() == '\n') {
-                // Если всё в порядке, выходим из цикла
-                break;
-            }
-            else {
-                Mistake();//выводим сообщение об ошибке
-            }
+int MenuPipes() {
+    int choice;
+    cout << "\n...........Choose.an.option...........\n";
+    cout << ".  1.Search pipes under repair       .\n";
+    cout << ".  2.Search pipes not under repair   .\n";
+    cout << ".  3.Search by name                  .\n";
+    cout << ".  0.Exit                            .\n";
+    cout << "......................................\n";
+    while (1) {
+        cin >> choice; // Считываем число
+        // Проверяем, правильно ли введено число
+        if (choice >= 0 && choice <= 3 && cin.good() && cin.peek() == '\n') {
+            // Если всё в порядке, выходим из цикла
+            break;
         }
-        if (answer == "y") {
-            P.repair = true;
+        else {
+            Mistake();//выводим сообщение об ошибке
         }
-        else if (answer == "n") {
-            P.repair = false;
+    }
+    return choice;
+}
+
+void Repair(bool filt, map<string, Pipe>& pipes) {
+    map<string, Pipe> repair;
+    if (filt) {
+        for (const auto& pair : pipes) {
+            if (pair.second.repair) {
+                repair[pair.first] = pair.second;
+            }
         }
     }
     else {
-        cout << "You don't have a pipe to edit";
+        for (const auto& pair : pipes) {
+            if (!pair.second.repair) {
+                repair[pair.first] = pair.second;
+            }
+        }
+    }
+    int exist=ViewPipe(repair,"such");
+    if (exist) {
+        int choice;
+        Pipe P;
+        choice = EditMenu();
+        switch (choice) {
+        case 1:
+            for (const auto& pair : repair) {
+                P = pair.second;
+                pipes.erase(pair.first);
+                EditPipe(P);
+                pipes[P.name] = P;
+            }
+            break;
+        case 2:
+            for (const auto& pair : repair) {
+                P = pair.second;
+                pipes.erase(pair.first);
+            }
+            break;
+        }
+    }
+}
+
+void Search(map<string, Pipe> pipes) {
+    string name;
+    cout << "Name the pipe you want to find:\n";
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    getline(cin, name); // Считываем имя
+    if (pipes.count(name)) {
+        cout << "\nName: " << pipes[name].name;
+        cout << "\nLength: " << pipes[name].length;
+        cout << "\nDiametr: " << pipes[name].diametr;
+        if (pipes[name].repair) {
+            cout << "\nUnder repair" << "\n";
+        }
+        else {
+            cout << "\nNot under repair" << "\n";
+        }
+    }
+    else {
+        cout << "You don't have that pipe\n";
+    }
+}
+
+int EditMenu() {
+    int choice;
+    cout << "\n...........Choose.an.option...........\n";
+    cout << ".  1.Edit                            .\n";
+    cout << ".  2.Delete                          .\n";
+    cout << ".  0.Exit                            .\n";
+    cout << "......................................\n";
+    while (1) {
+        cin >> choice; // Считываем число
+        // Проверяем, правильно ли введено число
+        if (choice >= 0 && choice <= 2 && cin.good() && cin.peek() == '\n') {
+            // Если всё в порядке, выходим из цикла
+            break;
+        }
+        else {
+            Mistake();//выводим сообщение об ошибке
+        }
+    }
+    return choice;
+}
+
+void EditPipe(Pipe& P) {
+    if (P.repair == 1) {
+        P.repair = 0;
+    }
+    else {
+        P.repair = 1;
     }
 }
 
