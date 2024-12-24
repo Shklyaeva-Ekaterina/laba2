@@ -2,56 +2,80 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <set>
 using namespace std;
 
+class CompressStation {
+    friend void CreateCompress(map<int, CompressStation>& stations, int& idcounterCs);
+    friend int ViewComp(map<int, CompressStation> stations, string answer);
+    friend void EditCompress(CompressStation& C, int workshops);
+    friend int MenuComp();
+    friend void SearchComp(map<int, CompressStation>& stations);
+    friend void Workshops(map<int, CompressStation>& stations);
+    friend std::ostream& operator << (std::ostream& os, const CompressStation& C);
+public:
+    string name;
+    int workshop;
+    int realworkshop;
+    double effect;
+};
 
-struct Pipe {
+class Pipe {
+    friend void CreatePipe(map<int, Pipe>& pipes, int& idcounterTr);
+    friend int ViewPipe(map<int, Pipe> pipes, string answer);
+    friend void Repair(bool filt, map<int, Pipe>& pipes);
+    friend void SearchPipe(map<int, Pipe>& pipes);
+    friend void EditPipe(Pipe& P);
+    friend void ReadFile(map<int, Pipe>& pipes, map<int, CompressStation>& stations);
+    friend std::ostream& operator << (std::ostream& os, const Pipe& P);
+public:
     string name;
     int length;
     int diametr;
     bool repair;
 };
 
-struct CompressStation {
-    string name;
-    int workshop;
-    int realworkshop;
-    double effect;
-    //double percent = (workshop - realworkshop) / workshop * 100;
-};
+int MenuPipes();
+int MenuComp();
+void SaveFile(map<int, Pipe>& pipes, map<int, CompressStation>& stations);
 
 int Menu();
 void Mistake();
 int EditMenu();
 
-void CreatePipe(map<string, Pipe>& pipes);
-int ViewPipe(map<string, Pipe> pipes, string answer);
-int MenuPipes();
-void Repair(bool filt, map<string, Pipe>& pipes);
-void SearchPipe(map<string, Pipe>& pipes);
-void EditPipe(Pipe& P);
+std::ostream& operator << (std::ostream& os, const Pipe & P)
+{
+    string rep;
+    if (P.repair) {
+        rep = "Under repair";
+    }
+    else {
+        rep = "Not under repair";
+    }
+    return cout << "\nName: " << P.name << "\nLength: " << P.length << "\nDiametr: " << P.diametr << endl << rep << endl;
+}
 
-void CreateCompress(map<string, CompressStation>& stations);
-int ViewComp(map<string, CompressStation> stations, string answer);
-void EditCompress(CompressStation& C);
-int MenuComp();
-void SearchComp(map<string, CompressStation>& stations);
-void Workshops(map<string, CompressStation>& stations);
+std::ostream& operator << (std::ostream& os, const CompressStation& C)
+{
+    return cout << "\nName: " << C.name << "\nAmount of workshops: " << C.workshop << "\nAmount of working workshops: " << C.realworkshop << "\nEffectiveness: " << C.effect << "\n";
+}
 
 int main()
 {
-    map<string, CompressStation> stations;
-    map<string, Pipe> pipes;
+    map<int, Pipe> pipes;
+    map<int, CompressStation> stations;
+    int idcounterTr = 1;
+    int idcounterCs = 1;
     bool cycle = 1;
     while (cycle) {
         int choice;
-        choice = Menu();//
+        choice = Menu();
         switch (choice) {
         case 1:
-            CreatePipe(pipes);
+            CreatePipe(pipes, idcounterTr);
             break;
         case 2:
-            CreateCompress(stations);
+            CreateCompress(stations, idcounterCs);
             break;
         case 3:
             ViewPipe(pipes,"any");
@@ -80,19 +104,25 @@ int main()
             choice = MenuComp();
             switch (choice) {
             case 1:
-                Workshops(stations);
-                break;
-            case 2:
                 SearchComp(stations);
                 break;
+            case 2:
+                Workshops(stations);
+                break;
             }
+            break;
+        case 7:
+            SaveFile(pipes,stations);
+            break;
+        case 8:
+            ReadFile(pipes, stations);
             break;
         case 0:
             cycle = 0;
             break;
         }
     }
-};
+};/////////////////////////////////////////////////////
 
 
 //Общие функции
@@ -105,12 +135,14 @@ int Menu() { // создаем меню для выбора действий
     cout << ".  4.View my compressor stations     .\n";
     cout << ".  5.Search pipes                    .\n";
     cout << ".  6.Search compressor stations      .\n";
+    cout << ".  7.Save                            .\n";
+    cout << ".  8.Read                            .\n";
     cout << ".  0.Exit                            .\n";
     cout << "......................................\n";
     while (1) {
         cin >> choice; // Считываем число
         // Проверяем, правильно ли введено число
-        if (choice >= 0 && choice <= 6 && cin.good() && cin.peek() == '\n') {
+        if (choice >= 0 && choice <= 8 && cin.good() && cin.peek() == '\n') {
             // Если всё в порядке, выходим из цикла
             break;
         }
@@ -131,7 +163,9 @@ int EditMenu() {
     int choice;
     cout << "\n...........Choose.an.option...........\n";
     cout << ".  1.Edit                            .\n";
+    cout << ".  2.Edit by choice                  .\n";
     cout << ".  2.Delete                          .\n";
+    cout << ".  2.Delete by choice                .\n";
     cout << ".  0.Exit                            .\n";
     cout << "......................................\n";
     while (1) {
@@ -150,7 +184,7 @@ int EditMenu() {
 
 
 //Функции для работы с трубами
-void CreatePipe(map<string, Pipe>& pipes) {
+void CreatePipe(map<int, Pipe>& pipes, int& idcounterTr) {
     Pipe P;
     cout << "\nCreation of a pipe.\n";
     cout << "Name the pipe:\n";
@@ -158,12 +192,12 @@ void CreatePipe(map<string, Pipe>& pipes) {
     while (1) {
         getline(cin, P.name); // Считываем имя
         // Проверяем, было ли введено имя
-        if (cin.good() && !(pipes.count(P.name))) {
+        if (cin.good()) {
             // Если всё в порядке, выходим из цикла 
             break;
         }
         else {
-            cout << "You already have that pipe.\nTry another name:\n";//выводим сообщение об ошибке
+            //cout << "You already have that pipe.\nTry another name:\n";//выводим сообщение об ошибке
             cin.clear(); // Сбрасываем флаг ошибки
             continue;
         }
@@ -211,22 +245,16 @@ void CreatePipe(map<string, Pipe>& pipes) {
     else if (answer == "n") {
         P.repair = false;
     }
-    pipes[P.name] = P;
+    pipes[idcounterTr] = P;
+    idcounterTr++;
 }
 
-int ViewPipe(map<string, Pipe> pipes, string answer) {
+int ViewPipe(map<int, Pipe> pipes, string answer) {
     if (pipes.size() != 0) {
         cout << "\nPipes\n";
         for (const auto& pair : pipes) {
-            cout << "\nName: " << pair.second.name;
-            cout << "\nLength: " << pair.second.length;
-            cout << "\nDiametr: " << pair.second.diametr;
-            if (pair.second.repair) {
-                cout << "\nUnder repair" << "\n";
-            }
-            else {
-                cout << "\nNot under repair" << "\n";
-            }
+            cout << "\nID: " << pair.first;
+            cout << pair.second;
         }
         return 1;
     }
@@ -258,8 +286,8 @@ int MenuPipes() {
     return choice;
 }
 
-void Repair(bool filt, map<string, Pipe>& pipes) {
-    map<string, Pipe> repair;
+void Repair(bool filt, map<int, Pipe>& pipes) {
+    map<int, Pipe> repair;
     if (filt) {
         for (const auto& pair : pipes) {
             if (pair.second.repair) {
@@ -276,60 +304,166 @@ void Repair(bool filt, map<string, Pipe>& pipes) {
     }
     int exist = ViewPipe(repair, "such");
     if (exist) {
-        int choice;
+        int choice = EditMenu();
         Pipe P;
-        choice = EditMenu();
         switch (choice) {
         case 1:
             for (const auto& pair : repair) {
                 P = pair.second;
                 pipes.erase(pair.first);
                 EditPipe(P);
-                pipes[P.name] = P;
+                pipes[pair.first] = P;
             }
             break;
         case 2:
+            cout << "Choose ids of pipes you want to edit (y/n):" << endl;
             for (const auto& pair : repair) {
                 P = pair.second;
                 pipes.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        EditPipe(P);
+                        pipes[pair.first] = P;
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        pipes[pair.first] = P;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
+            break;
+        case 3:
+            for (const auto& pair : repair) {
+                pipes.erase(pair.first);
+            }
+            break;
+        case 4:
+            cout << "Choose ids of pipes you want to delete (y/n):" << endl;
+            for (const auto& pair : repair) {
+                P = pair.second;
+                pipes.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        pipes[pair.first] = P;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
             }
             break;
         }
     }
 }
 
-void SearchPipe(map<string, Pipe>& pipes) {
+void SearchPipe(map<int, Pipe>& pipes) {
     string name;
+    bool search=0;
+    map<int, Pipe> found;
     cout << "Name the pipe you want to find:\n";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     getline(cin, name); // Считываем имя
-    if (pipes.count(name)) {
-        cout << "\nName: " << pipes[name].name;
-        cout << "\nLength: " << pipes[name].length;
-        cout << "\nDiametr: " << pipes[name].diametr;
-        if (pipes[name].repair) {
-            cout << "\nUnder repair" << "\n";
+    for (const auto& pair : pipes) {
+        if (pair.second.name.find(name) != string::npos) {
+            found[pair.first]=pair.second;
+            cout << "\nID: " << pair.first;
+            cout << pair.second;
+            search = 1;
         }
-        else {
-            cout << "\nNot under repair" << "\n";
-        }
+    }
+    if (search) {
         int choice = EditMenu();
         Pipe P;
         switch (choice) {
         case 1:
-            P = pipes[name];
-            pipes.erase(name);
-            EditPipe(P);
-            pipes[name] = P;
+            for (const auto& pair : found) {
+                P = pair.second;
+                pipes.erase(pair.first);
+                EditPipe(P);
+                pipes[pair.first] = P;
+            }
             break;
         case 2:
-            P = pipes[name];
-            pipes.erase(name);
+            cout << "Choose ids of pipes you want to edit (y/n):"<<endl;
+            for (const auto& pair : found) {
+                P = pair.second;
+                pipes.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        EditPipe(P);
+                        pipes[pair.first] = P;
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        pipes[pair.first] = P;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
+            break;
+        case 3:
+            for (const auto& pair : found) {
+                pipes.erase(pair.first);
+            }
+            break;
+        case 4:
+            cout << "Choose ids of pipes you want to delete (y/n):" << endl;
+            for (const auto& pair : found) {
+                P = pair.second;
+                pipes.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        pipes[pair.first] = P;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
             break;
         }
     }
-    else {
-        cout << "You don't have that pipe\n";
+    else{
+        cout << "You don't have that pipes\n";
     }
 }
 
@@ -344,7 +478,7 @@ void EditPipe(Pipe& P) {
 
 
 //Функции для работы с КС
-void CreateCompress(map<string, CompressStation>& stations) {
+void CreateCompress(map<int, CompressStation>& stations, int& idcounterCs) {
     CompressStation C;
     cout << "\nCreation of a compressor station.\n";
     cout << "Name the compressor station:\n";
@@ -352,12 +486,12 @@ void CreateCompress(map<string, CompressStation>& stations) {
     while (1) {
         getline(cin, C.name); // Считываем имя
         // Проверяем, было ли введено имя
-        if (cin.good() && !(stations.count(C.name))) {
+        if (cin.good()) {
             // Если всё в порядке, выходим из цикла 
             break;
         }
         else {
-            cout << "You already have that station.\nTry another name:\n";//выводим сообщение об ошибке
+            //cout << "You already have that pipe.\nTry another name:\n";//выводим сообщение об ошибке
             cin.clear(); // Сбрасываем флаг ошибки
             continue;
         }
@@ -398,17 +532,17 @@ void CreateCompress(map<string, CompressStation>& stations) {
             Mistake();//выводим сообщение об ошибке
         }
     }
-    stations[C.name] = C;
+    stations[idcounterCs] = C;
+    idcounterCs++;
+
 }
 
-int ViewComp(map<string, CompressStation> stations, string answer) {
+int ViewComp(map<int, CompressStation> stations, string answer) {
     if (stations.size() != 0) {
         cout << "\nCompressor Stations\n";
         for (const auto& pair : stations) {
-            cout << "\nName: " << pair.second.name;
-            cout << "\nAmount of workshops: " << pair.second.workshop;
-            cout << "\nAmount of working workshops: " << pair.second.realworkshop;
-            cout << "\nEffectiveness: " << pair.second.effect << "\n";
+            cout << "\nID: " << pair.first;
+            cout << pair.second;
         }
         return 1;
     }
@@ -418,28 +552,22 @@ int ViewComp(map<string, CompressStation> stations, string answer) {
     }
 }
 
-void EditCompress(CompressStation& C) {
-    cout << "Specify the amount of working workshops:\n";
-    while (1) {
-        cin >> C.realworkshop; // Считываем число
-        // Проверяем, правильно ли введено число
-        if (C.realworkshop >= 0 && C.realworkshop <= C.workshop && cin.good() && cin.peek() == '\n') {
-            // Если всё в порядке, выходим из цикла
-            break;
-        }
-        else {
-            Mistake();//выводим сообщение об ошибке
-        }
+void EditCompress(CompressStation& C,int workshops) {
+    if (C.workshop >= workshops) {// Считываем число
+        C.realworkshop = workshops;
+    }
+    else {
+        C.realworkshop = C.workshop;
     }
 }
 
 int MenuComp() {
     int choice;
-    cout << "\n..............Choose.an.option..............\n";
-    cout << ".   1.Search by percent of unused workshops.\n";
-    cout << ".   2.Search by name                       .\n";
-    cout << ".   0.Exit                                 .\n";
-    cout << "............................................\n";
+    cout << "\n...............Choose.an.option...............\n";
+    cout << ".  1.Search by name                          .\n";
+    cout << ".  2.Search by percent of working workshops  .\n";
+    cout << ".  0.Exit                                    .\n";
+    cout << "..............................................\n";
     while (1) {
         cin >> choice; // Считываем число
         // Проверяем, правильно ли введено число
@@ -454,29 +582,112 @@ int MenuComp() {
     return choice;
 }
 
-void SearchComp(map<string, CompressStation>& stations) {
+void SearchComp(map<int, CompressStation>& stations) {
     string name;
-    cout << "Name the station you want to find:\n";
+    bool search = 0;
+    map<int, CompressStation> found;
+    cout << "Name the pipe you want to find:\n";
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
     getline(cin, name); // Считываем имя
-    if (stations.count(name)) {
-        cout << "\nCompressor Stations\n";
-        cout << "\nName: " << stations[name].name;
-        cout << "\nAmount of workshops: " << stations[name].workshop;
-        cout << "\nAmount of working workshops: " << stations[name].realworkshop;
-        cout << "\nEffectiveness: " << stations[name].effect << "\n";
+    for (const auto& pair : stations) {
+        if (pair.second.name.find(name) != string::npos) {
+            found[pair.first] = pair.second;
+            cout << "\nID: " << pair.first;
+            cout << pair.second;
+            search = 1;
+        }
+    }
+    if (search) {
+        int workshops;
         int choice = EditMenu();
         CompressStation C;
         switch (choice) {
         case 1:
-            C = stations[name];
-            stations.erase(name);
-            EditCompress(C);
-            stations[name] = C;
+            cout << "Specify the amount of working workshops:\n";
+            while (1) {
+                cin >> workshops;
+                if (cin.good() && cin.peek() == '\n') {
+                    // Если всё в порядке, выходим из цикла
+                    break;
+                }
+                else {
+                    Mistake();//выводим сообщение об ошибке
+                }
+            }
+            for (const auto& pair : found) {
+                C = pair.second;
+                stations.erase(pair.first);
+                EditCompress(C,workshops);
+                stations[pair.first] = C;
+            }
             break;
         case 2:
-            C = stations[name];
-            stations.erase(name);
+            cout << "Specify the amount of working workshops:\n";
+            while (1) {
+                cin >> workshops;
+                if (cin.good() && cin.peek() == '\n') {
+                    // Если всё в порядке, выходим из цикла
+                    break;
+                }
+                else {
+                    Mistake();//выводим сообщение об ошибке
+                }
+            }
+            cout << "Choose ids of stations you want to edit (y/n):" << endl;
+            for (const auto& pair : found) {
+                C = pair.second;
+                stations.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        EditCompress(C, workshops);
+                        stations[pair.first] = C;
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        stations[pair.first] = C;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
+            break;
+        case 3:
+            for (const auto& pair : found) {
+                stations.erase(pair.first);
+            }
+            break;
+        case 4:
+            cout << "Choose ids of stations you want to delete (y/n):" << endl;
+            for (const auto& pair : found) {
+                C = pair.second;
+                stations.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        stations[pair.first] = C;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
             break;
         }
     }
@@ -485,15 +696,15 @@ void SearchComp(map<string, CompressStation>& stations) {
     }
 }
 
-void Workshops(map<string, CompressStation>& stations) {
-    map<string, CompressStation> percents;
-    double percent;
-    double rpercent;
-    cout << "Specify the percent of unused workshops:\n";
+void Workshops(map<int, CompressStation>& stations) {
+    map<int, CompressStation> percents;
+    int percent;
+
+    cout << "Specify the percent of working workshops:\n";
     while (1) {
         cin >> percent; // Считываем число
         // Проверяем, правильно ли введено число
-        if (percent >= 0 && percent <= 100 && cin.good() && cin.peek() == '\n') {
+        if (percent > 0 && cin.good() && cin.peek() == '\n') {
             // Если всё в порядке, выходим из цикла
             break;
         }
@@ -501,33 +712,234 @@ void Workshops(map<string, CompressStation>& stations) {
             Mistake();//выводим сообщение об ошибке
         }
     }
+    bool search = 0;
     for (const auto& pair : stations) {
-        rpercent = (static_cast<double>(pair.second.workshop - pair.second.realworkshop) / pair.second.workshop) * 100;
-        cout << rpercent;
-        if (rpercent==percent) {
+        if (((abs(1.0 * pair.second.workshop - 1.0 * pair.second.realworkshop) / pair.second.workshop)*100.0 - 1.0 * percent) < 10.0){
             percents[pair.first] = pair.second;
+            cout << "\nID: " << pair.first;
+            cout << pair.second;
+            search = 1;
         }
     }
-    int exist = ViewComp(percents, "such");
-    if (exist) {
-        int choice;
+    if (search) {
+        int workshops;
+        int choice = EditMenu();
         CompressStation C;
-        choice = EditMenu();
         switch (choice) {
         case 1:
+            cout << "Specify the amount of working workshops:\n";
+            while (1) {
+                cin >> workshops;
+                if (cin.good() && cin.peek() == '\n') {
+                    // Если всё в порядке, выходим из цикла
+                    break;
+                }
+                else {
+                    Mistake();//выводим сообщение об ошибке
+                }
+            }
             for (const auto& pair : percents) {
                 C = pair.second;
                 stations.erase(pair.first);
-                EditCompress(C);
-                stations[C.name] = C;
+                EditCompress(C,workshops);
+                stations[pair.first] = C;
             }
             break;
         case 2:
+            cout << "Specify the amount of working workshops:\n";
+            while (1) {
+                cin >> workshops;
+                if (cin.good() && cin.peek() == '\n') {
+                    // Если всё в порядке, выходим из цикла
+                    break;
+                }
+                else {
+                    Mistake();//выводим сообщение об ошибке
+                }
+            }
+            cout << "Choose ids of stations you want to edit (y/n):" << endl;
             for (const auto& pair : percents) {
                 C = pair.second;
                 stations.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        EditCompress(C, workshops);
+                        stations[pair.first] = C;
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        stations[pair.first] = C;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
+            }
+            break;
+        case 3:
+            for (const auto& pair : percents) {
+                stations.erase(pair.first);
+            }
+            break;
+        case 4:
+            cout << "Choose ids of stations you want to delete (y/n):" << endl;
+            for (const auto& pair : percents) {
+                C = pair.second;
+                stations.erase(pair.first);
+                cout << pair.first << endl;
+                string answer;
+                while (1) {
+                    cin >> answer; // Считываем ответ
+                    // Проверяем, правильно ли введен ответ
+                    if (answer == "y" && cin.good() && cin.peek() == '\n') {
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else if (answer == "n" && cin.good() && cin.peek() == '\n') {
+                        stations[pair.first] = C;
+                        // Если всё в порядке, выходим из цикла
+                        break;
+                    }
+                    else {
+                        Mistake();//выводим сообщение об ошибке
+                    }
+                }
             }
             break;
         }
     }
+    else {
+        cout << "You don't have that compressor station\n";
+    }
+}
+
+void SaveFile(map<int, Pipe>& pipes,map<int, CompressStation>& stations) {
+    string filename;
+    cout << "Choose the file to save information:" << endl;
+    while (1) {
+        cin >> filename;
+        // Проверяем, правильно ли введено число
+        if (filename.length() > 4 && cin.good() && cin.peek() == '\n' && filename.compare(filename.length() - 4, 4, ".txt") == 0) {
+            // Если всё в порядке, выходим из цикла
+            break;
+        }
+        else {
+            Mistake();//выводим сообщение об ошибке
+        }
+    }
+
+    // Создаем объект ofstream для записи в файл
+    ofstream outFile(filename);
+    for (const auto& pair : pipes) {
+        outFile << "p\n";
+        outFile << pair.first;
+        outFile << endl << pair.second.name << endl << pair.second.length << endl << pair.second.diametr << endl << pair.second.repair<<endl;
+    }
+    for (const auto& pair : stations) {
+        outFile << "s\n";
+        outFile << pair.first;
+        outFile << endl << pair.second.name << endl << pair.second.workshop << endl << pair.second.realworkshop << endl << pair.second.effect<<endl;
+    }
+    // Закрываем файл
+    outFile.close();
+}
+
+void ReadFile(map<int, Pipe>& pipes, map<int, CompressStation>& stations) {
+    string filename;
+    cout << "Choose the file to read information:" << endl;
+    while (1) {
+        cin >> filename;
+        // Проверяем, правильно ли введено число
+        if (filename.length() > 4 && cin.good() && cin.peek() == '\n' && filename.compare(filename.length() - 4, 4, ".txt") == 0) {
+            // Если всё в порядке, выходим из цикла
+            break;
+        }
+        else {
+            Mistake();//выводим сообщение об ошибке
+        }
+    }
+    ifstream inFile(filename);
+    // Проверяем, удалось ли открыть файл
+    if (inFile) {
+        string line;
+        // Чтение строк из файла
+        string fromfile; 
+        int lineNumber = 0;
+        int mark=0;
+        int id;
+        while (getline(inFile, line)) {
+            cout << line<<endl;
+            inFile >> fromfile;
+            if (fromfile == "p") {
+                lineNumber = 0;
+                mark = 1;
+            }
+            if (fromfile == "s") {
+                lineNumber = 0;
+                mark = 2;
+            }
+            if (mark==2) {
+                CompressStation C;
+                if (lineNumber == 1) { // Если это первая строка
+                    // Извлекаем значение имени
+                    id = stoi(fromfile);
+                }
+                if (lineNumber == 2) { // Если это первая строка
+                    // Извлекаем значение имени
+                    C.name=fromfile;
+                }
+                if (lineNumber == 3) {
+                    C.workshop = stoi(fromfile);
+                }
+                if (lineNumber == 4) {
+                    C.realworkshop = stoi(fromfile);
+                }
+                if (lineNumber == 5) {
+                    C.effect = stod(fromfile);
+                    cout << C;
+                    stations[id] = C;
+                }
+            }
+            else if (mark==1) {
+                Pipe P;
+                if (lineNumber == 1) { // Если это первая строка
+                    // Извлекаем значение имени
+                    id = stoi(fromfile);
+                }
+                if (lineNumber == 2) { // Если это первая строка
+                    // Извлекаем значение имени
+                    P.name=fromfile;
+                }
+                if (lineNumber == 3) {
+                    // Извлекаем значение имени
+
+                    P.length = stoi(fromfile);
+                }
+                if (lineNumber == 4) {
+                    P.diametr = stoi(fromfile);
+                }
+                if (lineNumber == 5) {
+                    if (fromfile == "1") {
+                        P.repair = 1;
+                    }
+                    else {
+                        P.repair = 0;
+                    }
+                    cout << P;
+
+                    pipes[id] = P;
+                }
+            }
+            lineNumber++;
+        }
+    }
+    // Закрываем файл
+    inFile.close();
 }
